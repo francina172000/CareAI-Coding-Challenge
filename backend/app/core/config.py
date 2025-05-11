@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "CareIN AI Call Summary"
     API_V1_STR: str = "/api/v1"
 
-    DATABASE_URL: str = "postgresql://postgres:Dsouza5451@127.0.0.1:5432/aicallsummary"
+    DATABASE_URL: str = "postgresql://postgres:pali54321@127.0.0.1:5432/aicallsummary"
 
     GEMINI_API_KEY: str = "AIzaSyC1-3Ecw-U23q0OAxchPgwrEt0lMroTWfI"
 
