@@ -21,17 +21,12 @@ This project is a submission for the CareIN AI Technical Challenge. It's a full-
 **Database:**
 *   PostgreSQL
 
-**Containerization:**
-*   Docker
-*   Docker Compose
-
 ## Project Structure
 
 ## Prerequisites
 
 *   Python 3.9+ and Pip
 *   Node.js 18+ and Npm (or Yarn)
-*   Docker and Docker Compose
 *   A running PostgreSQL instance (if not using Docker for the database)
 *   A Gemini API Key from Google AI Studio
 
@@ -62,22 +57,22 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1
 **1. Backend (FastAPI):**
 
    *   Navigate to the `backend` directory:
-     ```bash
+     ```
      cd backend
      ```
    *   Create a virtual environment (recommended):
-     ```bash
+     ```
      python -m venv venv
      source venv/bin/activate  # On Windows: venv\Scripts\activate
      ```
    *   Install dependencies:
-     ```bash
+     ```
      pip install -r requirements.txt
      ```
    *   Ensure your PostgreSQL server is running and accessible.
    *   Update `backend/.env` with your `DATABASE_URL` and `GEMINI_API_KEY`.
    *   Run the FastAPI application:
-     ```bash
+     ```
      uvicorn app.main:app --reload
      ```
      The backend should be running on `http://localhost:8000`.
@@ -85,16 +80,16 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1
 **2. Frontend (Next.js):**
 
    *   Navigate to the `frontend` directory (from the project root):
-     ```bash
+     ```
      cd ../frontend  # Or cd frontend if in project root
      ```
    *   Install dependencies:
-     ```bash
+     ```
      npm install
      ```
    *   Update `frontend/.env.local` if your backend is not on `http://localhost:8000/api/v1`.
    *   Run the Next.js development server:
-     ```bash
+     ```
      npm run dev
      ```
      The frontend should be running on `http://localhost:3000`.
@@ -108,24 +103,24 @@ This method will build and run the backend, frontend, and a PostgreSQL database 
 
 **2. Environment Variables:**
    * Create `backend/.env` in the `backend` directory with your `GEMINI_API_KEY`. The `DATABASE_URL` will be handled by Docker Compose, but you should use the one specified in the `docker-compose.yml` (e.g., `postgresql://postgres:yoursecurepassword@db:5432/carein_db`) if you were to connect from *within* the backend container. For the `.env` file, to make it easy for local development and Docker, you could set it to the Docker internal one or use separate configs. For simplicity with current setup:
-        ```env
+        ```
         # backend/.env
         DATABASE_URL=postgresql://postgres:yoursecurepassword@db:5432/carein_db
         GEMINI_API_KEY=your_actual_gemini_api_key
         ```
    * Create `frontend/.env.local` in the `frontend` directory:
-        ```env
+        ```
         # frontend/.env.local
         NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1
         ```
 
 **3. Build and Run:**
    * Navigate to the project root directory (`CareAI-Coding-Challenge`):
-     ```bash
+     ```
      cd /path/to/CareAI-Coding-Challenge
      ```
    * Build and start the services:
-     ```bash
+     ```
      docker-compose up --build
      ```
      *   Add `-d` to run in detached mode: `docker-compose up --build -d`
@@ -134,7 +129,7 @@ This method will build and run the backend, frontend, and a PostgreSQL database 
    * The API docs (Swagger UI) will be at `http://localhost:8000/docs`.
 
 **4. To stop the services:**
-   ```bash
+   ```
    docker-compose down
    ```
 
