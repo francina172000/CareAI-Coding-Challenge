@@ -50,3 +50,39 @@ async def create_transcript(
     
     return db_transcript
 
+@router.get("/", response_model=List[transcript_schema.Transcript])
+async def read_transcripts(
+    skip: int = 0, 
+    limit: int = 100, 
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieve all transcripts with pagination.
+    Orders by creation date descending (newest first).
+    """
+    transcripts = (
+        db.query(transcript_model.Transcript)
+        .order_by(transcript_model.Transcript.created_at.desc()) # Order by newest first
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+    return transcripts
+
+@router.get("/{transcript_id}", response_model=transcript_schema.Transcript)
+async def read_transcript(
+    transcript_id: int, 
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieve a single transcript by its ID.
+    """
+    db_transcript = (
+        db.query(transcript_model.Transcript)
+        .filter(transcript_model.Transcript.id == transcript_id)
+        .first()
+    )
+    if db_transcript is None:
+        raise HTTPException(status_code=404, detail="Transcript not found")
+    return db_transcript
+
