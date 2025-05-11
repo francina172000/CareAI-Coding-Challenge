@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, status
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -12,7 +12,7 @@ from app.services import summary_service
 
 router = APIRouter()
 
-@router.post("/", response_model=schemas.transcript.Transcript, status_code=201)
+@router.post("/", response_model=schemas.transcript.Transcript, status_code=status.HTTP_201_CREATED)
 async def create_transcript(
     transcript_in: schemas.transcript.TranscriptCreate,
     background_tasks: BackgroundTasks,
@@ -84,5 +84,43 @@ async def read_transcript(
     )
     if db_transcript is None:
         raise HTTPException(status_code=404, detail="Transcript not found")
+    return db_transcript
+
+@router.post("/{transcript_id}/resummarize", response_model=transcript_schema.Transcript)
+async def resummarize_transcript(
+    transcript_id: int,
+    background_tasks: BackgroundTasks, # To run summarization in background
+    db: Session = Depends(get_db)
+):
+    """
+    Triggers a re-summarization for an existing transcript.
+    The actual summarization (and CommLog update) happens in the background.
+    """
+    db_transcript = db.query(transcript_model.Transcript).filter(transcript_model.Transcript.id == transcript_id).first()
+    if not db_transcript:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Transcript not found")
+
+    # Log the re-run attempt before starting the background task
+    try:
+        log_entry = transcript_model.CommLog(
+            event_type="RESUMMARY_REQUESTED",
+            details=f"Re-summarization requested for transcript ID: {transcript_id}",
+            transcript_id=transcript_id
+        )
+        db.add(log_entry)
+        db.commit()
+        print(f"CommLog: RESUMMARY_REQUESTED event logged for transcript ID: {transcript_id}")
+    except Exception as e:
+        print(f"Error logging RESUMMARY_REQUESTED to CommLog for transcript {transcript_id}: {e}")
+        # db.rollback() # Potentially rollback if logging is critical, though the main task will proceed
+
+    print(f"Transcript ID: {transcript_id} re-summarization requested. Adding to background tasks.")
+    background_tasks.add_task(
+        summary_service.generate_summary_for_transcript,
+        db=db, # Pass the current session (revisit if issues arise with background task sessions)
+        transcript_id=transcript_id
+    )
+    
+    db.refresh(db_transcript) 
     return db_transcript
 

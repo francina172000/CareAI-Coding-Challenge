@@ -30,8 +30,12 @@ export default function DashboardPage() {
   const [commlogError, setCommlogError] = useState<string | null>(null);
   // --- End New state for CommLog ---
 
+  // State to track which transcript is currently being re-summarized
+  const [rerunningSummaryId, setRerunningSummaryId] = useState<number | null>(null);
+
   const fetchTranscripts = async () => {
-    setIsLoading(true);
+    // If not initial load, don't set global isLoading to avoid full page spinner
+    if (transcripts.length === 0) setIsLoading(true); 
     setError(null);
     try {
       const response = await fetch(`${API_BASE_URL}/transcripts/?limit=50&skip=0`);
@@ -42,14 +46,11 @@ export default function DashboardPage() {
       const data: PageTranscript[] = await response.json();
       setTranscripts(data);
     } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("An unknown error occurred while fetching transcripts.");
-      }
+      if (err instanceof Error) { setError(err.message); } 
+      else { setError("An unknown error occurred while fetching transcripts."); }
       console.error("Failed to fetch transcripts:", err);
     } finally {
-      setIsLoading(false);
+      if (transcripts.length === 0 && isLoading) setIsLoading(false); // Only turn off global if it was on
     }
   };
 
@@ -59,8 +60,50 @@ export default function DashboardPage() {
 
   const handleRerunSummary = async (id: number) => {
     console.log("Attempting to re-run summary for transcript ID:", id);
-    alert(`Placeholder: Re-run summary for ID ${id}. This needs a backend endpoint.`);
-    
+    setRerunningSummaryId(id); // Indicate this transcript is being processed
+    setError(null); // Clear previous global errors
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/transcripts/${id}/resummarize`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // No body needed for this POST request based on backend setup
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: response.statusText }));
+        throw new Error(`Error ${response.status} re-running summary: ${errorData.detail || response.statusText}`);
+      }
+
+      // const updatedTranscript: PageTranscript = await response.json(); // Backend returns current state
+      console.log(`Re-run summary triggered for transcript ID: ${id}. It will update in the background.`);
+      
+      // Optimistic UI update (optional): Update the specific transcript to show "pending" again
+      // setTranscripts(prevTranscripts => 
+      //   prevTranscripts.map(t => 
+      //     t.id === id ? { ...t, summary_text: null } : t 
+      //   )
+      // );
+
+      // Advise user to wait or poll. For now, we'll rely on manual refresh or timed refresh.
+      // A more advanced approach would involve polling for this specific transcript's status or websockets.
+      alert(`Re-summarization started for Transcript ID: ${id}. The summary will update soon. You might need to refresh the list.`);
+
+      // Optionally, fetch all transcripts again after a short delay to see the CommLog update & pending summary
+      // setTimeout(() => {
+      //   fetchTranscripts();
+      // }, 3000); // Refresh after 3 seconds for example
+
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message); // Display error globally or on the card
+      } else {
+        setError("An unknown error occurred while re-running summary.");
+      }
+      console.error(`Failed to re-run summary for transcript ID ${id}:`, err);
+    } finally {
+      setRerunningSummaryId(null); // Reset indicator
+    }
   };
 
   const handleShowCommLog = (id: number) => {
@@ -207,8 +250,8 @@ export default function DashboardPage() {
                 <TranscriptCard 
                   key={transcript.id} 
                   transcript={transcript}
-                  onRerunSummary={handleRerunSummary} // Pass the defined handler
-                  onShowCommLog={handleShowCommLog}   // Pass the defined handler
+                  onRerunSummary={handleRerunSummary}
+                  onShowCommLog={handleShowCommLog}
                 />
               ))}
             </div>
