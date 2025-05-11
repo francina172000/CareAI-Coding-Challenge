@@ -19,7 +19,8 @@ async def create_transcript(
     db: Session = Depends(get_db)
 ):
     """
-    Receive a new transcript, store it, and trigger summarization in the background.
+    Receive a new transcript, store it, log the event, 
+    and trigger summarization in the background.
     """
     db_transcript = models.transcript.Transcript(
         original_text = transcript_in.original_text
@@ -27,6 +28,18 @@ async def create_transcript(
     db.add(db_transcript)
     db.commit()
     db.refresh(db_transcript)
+
+    try:
+        log_entry = transcript_model.CommLog(
+            event_type="TRANSCRIPT_CREATED",
+            details=f"New transcript received with ID: {db_transcript.id}",
+            transcript_id=db_transcript.id
+        )
+        db.add(log_entry)
+        db.commit()
+        print(f"CommLog: TRANSCRIPT_CREATED event logged for transcript ID: {db_transcript.id}")
+    except Exception as e:
+        print(f"Error logging TRANSCRIPT_CREATED to CommLog: {e}")
 
     print(f"Transcript ID: {db_transcript.id} created. Adding summarization to background tasks.")
     background_tasks.add_task(
